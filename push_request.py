@@ -59,6 +59,8 @@ async def move_from_queue(message, from_q, to_q=None):
     """
     from_q.delete_message(message)
     if to_q:
+        # TODO: Fix the message that is sent. Now it seems to be the object or
+        # hash, not a readable body
         to_q.write(message)
 
 
