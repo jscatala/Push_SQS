@@ -1,3 +1,4 @@
+from boto.sqs.message import Message as botoMessage
 from cerberus import Validator
 from json import loads
 
@@ -18,6 +19,17 @@ from json import loads
 #         {"team_id":1},
 #         {"team":1}
 #         ]}
+
+
+def is_boto_message(m):
+    """
+    used by send_to_queue
+    """
+    if not isinstance(m, botoMessage):
+        message = 'Object m is not type boto.sqs.message.Message()'
+        raise TypeError(message + ', instead is {}'.format(type(m)))
+    else:
+        return True
 
 
 def validate_data(content, keys, schemas):
