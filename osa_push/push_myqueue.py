@@ -1,21 +1,24 @@
 import asyncio
 from boto.sqs import connect_to_region
-from boto.sqs.message import Message as botoMessage
+import warnings
 
-from .osa_constants import KEYS_PUSH, WHERE_SCHEMA, DATA_SCHEMA
-from .sashido_push import send_push
-from .sashido_message import validate_message
+from osa_push.osa_constants import KEYS_PUSH, WHERE_SCHEMA, DATA_SCHEMA
+from osa_push.sashido_push import send_push
+from osa_push.sashido_message import validate_message, is_boto_message
 
 
 class MyQueue(object):
-    def __init__(self, aws_access_key, aws_secret_key, q_name,
-                 region='us-west-1'):
-        self.queue = self._get_queue(aws_access_key, aws_secret_key,
-                                     region, q_name)
+    def __init__(self, q_name, region='us-west-1', aws_access_key=None,
+                 aws_secret_key=None):
+        if aws_access_key and aws_secret_key:
+            self.queue = self._get_queue(region, q_name, aws_access_key,
+                                         aws_secret_key)
+        else:
+            self.queue = self._get_queue(region, q_name)
         self.message_list = asyncio.Queue()
         self.counter = 0
 
-    def _get_queue(self, access, secret, region, q_name):
+    def _get_queue(self, region, q_name, access=None, secret=None):
         """
         Function that connects to AWS SQS service and tries to get a queue
         args:
@@ -23,20 +26,17 @@ class MyQueue(object):
         return:
             SQS queue object
         """
-        conn = connect_to_region(
-            region,
-            aws_access_key_id=access,
-            aws_secret_access_key=secret
-        )
+        if access and secret:
+            conn = connect_to_region(
+                region,
+                aws_access_key_id=access,
+                aws_secret_access_key=secret
+            )
+        else:
+            warnings.warn("Using default aws_access_key and aws_secret_key")
+            conn = connect_to_region(region)
         my_queue = conn.get_queue(q_name)
         return my_queue
-
-    def _validate_message(self, m):
-        if not isinstance(type(m), botoMessage):
-            message = 'Object m is not type boto.sqs.message.Message()'
-            raise TypeError(message + ', instead is {}'.format(type(m)))
-        else:
-            return True
 
     def validate_queue(self):
         flag = False
@@ -57,7 +57,7 @@ class MyQueue(object):
                                                    wait_time_seconds=20)
             for m in new_messages:
                 await self.add_message(m)
-            print('Got {} new messages'.format(len(new_messages)))
+            # print('Got {} new messages'.format(len(new_messages)))
             sleep_time = len(new_messages)*5
             sleep = sleep_time if sleep_time <= 60 else 60
             await asyncio.sleep(sleep)
@@ -68,7 +68,7 @@ class MyQueue(object):
         print(self.counter)
 
     async def send_to_queue(self, m):
-        if self._validate_message(m):
+        if is_boto_message(m):
             await self.queue.write(m.message)
             self.delete_from_queue(m)
 
