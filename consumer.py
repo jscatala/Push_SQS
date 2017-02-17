@@ -9,7 +9,7 @@ ERROR__QUEUE_NOT_FOUND = 'Queue not found. Check queue name and retry'
 
 
 def digest_SQS():
-    q = MyQueue(AWS_ACCESS_KEY, AWS_SECRET_KEY, QUEUE)
+    q = MyQueue(QUEUE, 'us-west-1', AWS_ACCESS_KEY, AWS_ACCESS_KEY)
     if q.validate_queue():
         # error_queue = MyQueue(AWS_ACCESS_KEY, AWS_SECRET_KEY, ERROR_QUEUE)
         loop = asyncio.get_event_loop()
