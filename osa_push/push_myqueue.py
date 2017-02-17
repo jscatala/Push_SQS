@@ -48,7 +48,8 @@ class MyQueue(object):
         await self.message_list.put(m)
 
     async def get_message(self):
-        return await self.message_list.get()
+        if not self.message_list.empty():
+            return await self.message_list.get()
 
     async def get_messages(self):
         while True:
