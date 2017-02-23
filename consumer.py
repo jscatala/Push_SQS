@@ -1,15 +1,14 @@
 import asyncio
 
-from osa_push import MyQueue
+from osa_push.push_myqueue import MyQueue
 from push_config import (AWS_ACCESS_KEY, AWS_SECRET_KEY, QUEUE,
                          PARSE_URL, APPLICATION_ID, REST_API_KEY)  # , ERROR_QUEUE
 
 
-ERROR__QUEUE_NOT_FOUND = 'Queue not found. Check queue name and retry'
-
-
 def digest_SQS():
-    q = MyQueue(QUEUE, 'us-west-1', AWS_ACCESS_KEY, AWS_ACCESS_KEY)
+    ERROR__QUEUE_NOT_FOUND = 'Queue not found. Check queue name and retry'
+
+    q = MyQueue(QUEUE, 'us-west-1', AWS_ACCESS_KEY, AWS_SECRET_KEY)
     if q.validate_queue():
         # error_queue = MyQueue(AWS_ACCESS_KEY, AWS_SECRET_KEY, ERROR_QUEUE)
         loop = asyncio.get_event_loop()

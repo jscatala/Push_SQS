@@ -3,9 +3,8 @@ from asyncio import get_event_loop
 from async_timeout import timeout
 
 
-async def push(loop, app_id, rest_key, url, message):
-    async with ClientSession(loop=loop) as session:
-        with timeout(10):
+async def push(app_id, rest_key, url, message):
+    async with ClientSession() as session:
             head = {
                 "X-Parse-Application-Id": app_id,
                 "X-Parse-REST-API-Key": rest_key,
@@ -18,8 +17,7 @@ async def push(loop, app_id, rest_key, url, message):
 
 def send_push(app_id, rest_key, url, message):
     loop = get_event_loop()
-    return loop.run_until_complete(push(loop,
-                                        app_id,
+    return loop.run_until_complete(push(app_id,
                                         rest_key,
                                         url,
                                         message))

@@ -73,6 +73,16 @@ def convert_to_dict(obj):
     return data
 
 
+def build_dicts(data_dict, key):
+    arr = [{i:data_dict[i]} for i in data_dict.keys()]
+    return {key: arr}
+
+
+def dict_to_json(keys, *data):
+    formated_data = [build_dicts(d, k) for d,k in zip(data, keys)]
+    return formated_data
+
+
 def validate_message(body, keys, schemas):
     message = None
     body_json = is_json(body, keys)

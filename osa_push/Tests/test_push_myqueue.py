@@ -1,5 +1,6 @@
-import unittest
 from mock import patch, Mock
+import pytest
+import unittest
 
 from osa_push.push_myqueue import MyQueue
 
@@ -56,6 +57,3 @@ class MyQueueTestCase(unittest.TestCase):
         q = MyQueue('foo')
         get_queue_mock.assert_called_once_with('us-west-1', 'foo')
         assert q.validate_queue() is False
-
-    def add_message(loop):
-
