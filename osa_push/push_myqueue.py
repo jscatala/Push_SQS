@@ -3,8 +3,13 @@ from boto.sqs import connect_to_region
 from boto.sqs.message import Message as botoMessage
 import warnings
 
+from aiohttp import ClientSession
+from asyncio import get_event_loop
+from async_timeout import timeout
+import concurrent.futures
+
 from osa_push.osa_constants import KEYS_PUSH, WHERE_SCHEMA, DATA_SCHEMA
-from osa_push.sashido_push import push
+# from osa_push.sashido_push import push
 from osa_push.sashido_message import validate_message, is_boto_message
 
 
@@ -54,6 +59,7 @@ class MyQueue(object):
                                                    wait_time_seconds=20)
             for m in new_messages:
                 await self.add_message(m.get_body())
+                self.queue.delete_message(m)
             print('Got {} new messages'.format(len(new_messages)))
             sleep_time = len(new_messages)*5
             sleep = sleep_time if sleep_time <= 60 else 60
@@ -67,7 +73,24 @@ class MyQueue(object):
             await self.queue.write(m.message)
             self.delete_from_queue(m)
 
-    async def digest_messages(self, sashido_keys):
+
+
+    async def push(self, app_id, rest_key, url, message, loop):
+        async with ClientSession(loop=loop) as session:
+            with timeout(20):
+                head = {
+                    "X-Parse-Application-Id": app_id,
+                    "X-Parse-REST-API-Key":  rest_key,
+                    "Content-Type": "application/json"
+                }
+                print("pushing message: ", message)
+ 
+                async with session.post(url,
+                                        data=message,
+                                        headers=head) as resp:
+                    return resp.status, await resp.text()
+
+    async def digest_messages(self, sashido_keys, loop):
         while True:
             if not self.message_list.empty():
                 value = await self.message_list.get()
@@ -75,14 +98,24 @@ class MyQueue(object):
                 validated_msj = validate_message(value.replace("True", "true"),
                                                  KEYS_PUSH,
                                                  (WHERE_SCHEMA, DATA_SCHEMA))
+                print("validated?" )
                 if validated_msj:
+                    print(validated_msj)
                     # send message
                     validated_msj = validated_msj.replace("True", "true") \
                                                  .replace("'", "\"")
                     # print('--->', validated_msj)
                     api_key, rest_key, url = sashido_keys
-                    status, txt = await push(api_key, rest_key, url,
-                                             validated_msj)
-                    self.delete_from_queue(value)
-                    # print("ccc>",status, txt, "<ooo", sep='\t')
+                    status = cont = 0
+                    while status != 200 or cont >10:
+                        try:
+                            cont = cont + 1
+                            status, txt = await self.push(api_key, rest_key,
+                                                          url,
+                                                          validated_msj, loop)
+                        except concurrent.futures.TimeoutError:
+                            print("timeout... retry")
+                            if cont == 10:
+                                print("TIMEOUT: ", validated_msj)
+                    print("ccc>",validated_msj, status, txt, "<ooo", sep='\t')
             await asyncio.sleep(5)

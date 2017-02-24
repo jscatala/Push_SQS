@@ -7,7 +7,7 @@ from osa_push.osa_constants import WHERE_SCHEMA, DATA_SCHEMA, KEYS_PUSH
 from push_config import *
 
 
-def _get_queue(self):
+def _get_queue():
     conn = connect_to_region(
         'us-west-1',
         aws_access_key_id=AWS_ACCESS_KEY,
@@ -25,7 +25,7 @@ def send_to_SQS(msj):
     q = _get_queue()
     if q:
         m = botoMessage()
-        m.set_body(msg)
+        m.set_body(msj)
         q.write(m)
     else:
         raise NameError('Queue not found')
@@ -42,7 +42,10 @@ def digest_msj(*data):
         .replace("'", "\"")  # Due convertion python -> json
     push_msj = validate_message(data, KEYS_PUSH, (WHERE_SCHEMA, DATA_SCHEMA))
 
-    send_to_SQS(push_msj)
+    if push_msj:
+        msj = str(data)
+        print("--->", data)
+        send_to_SQS(msj)
 
 
 if __name__ == '__main__':

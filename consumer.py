@@ -18,7 +18,7 @@ def digest_SQS():
 
         for i in range(6):
             loop.create_task(q.digest_messages((APPLICATION_ID, REST_API_KEY,
-                                                PARSE_URL)))
+                                                PARSE_URL), loop))
 
         loop.run_forever()
     else:
